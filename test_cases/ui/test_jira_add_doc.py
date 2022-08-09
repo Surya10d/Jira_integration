@@ -23,6 +23,7 @@ class TestCaseJiraAddDoc:
     @pytest.mark.xfail
     def test_search_with_valid_value_TP_1(self, ticket_id, initialise):
         self.driver.find_element(*self.search_btn).send_keys("cau")
+        time.sleep(3)
         product_name_text = self.driver.find_element(*self.product_name_label).text
         assert product_name_text == "Cauliflower - 1 Kg", "Product name is not matched"
 
@@ -36,5 +37,6 @@ class TestCaseJiraAddDoc:
     @pytest.mark.parametrize("ticket_id", ["TP-3"])
     def test_search_with_valid_value_TP_3(self, ticket_id, initialise):
         self.driver.find_element(*self.search_btn).send_keys("bri")
+        time.sleep(3)
         product_name_text = self.driver.find_element(*self.product_name_label).text
         assert product_name_text == "Brinjal - 1 Kg", "Product name is not matched"
