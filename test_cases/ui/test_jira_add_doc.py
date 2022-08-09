@@ -30,7 +30,7 @@ class TestCaseJiraAddDoc:
     def test_search_with_invalid_value_TP_2(self, ticket_id, initialise):
         self.driver.find_element(*self.search_btn).send_keys("aksdjfasfjsfs")
         product_name_text = self.driver.find_element(*self.no_product_label).text
-        if product_name_text is "Sorry, no products matched your search!":
+        if product_name_text == "Sorry, no products matched your search!":
             assert False, "No products found for search value"
 
     @pytest.mark.parametrize("ticket_id", ["TP-3"])

@@ -12,6 +12,10 @@ from selenium.webdriver.firefox.options import Options as firefox_options
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from pytest_html_reporter import attach
+from docx import Document
+from docx.shared import Inches
+
+
 
 logger = None
 pytest_id = []
@@ -23,6 +27,9 @@ JIRA_DOMAIN = None
 PASS_STATUS_TRANSITION = None
 FAIL_STATUS_TRANSITION = None
 JIRA_CONDITION = None
+testcase_comment = None
+img_path = None
+jira_api_endpoint = ".atlassian.net/rest/api/2/issue"
 
 
 def pytest_cmdline_main(config):
@@ -176,11 +183,13 @@ def pytest_runtest_makereport(item):
 
 
 def send_results_to_jira(result, ticket_id):
-    # If testcase status is skipped, then it belongs to XFail condition, which got failed
-    testcase = {"passed": "Passed", "failed": "Failed", "skipped": "Xfailed"}
-    jira_api_endpoint = ".atlassian.net/rest/api/2/issue"
+    global testcase_comment
 
-    testcase_comment = f"{ticket_id} - Testcase is " + str(testcase[result.outcome])
+    # If testcase_dict status is skipped, then it belongs to XFail condition, which got failed
+    testcase_dict = {"passed": "Passed", "failed": "Failed", "skipped": "Xfailed"}
+
+
+    testcase_comment = f"{ticket_id} - Testcase is " + str(testcase_dict[result.outcome])
     comment_url = f"https://{JIRA_DOMAIN}{jira_api_endpoint}/{ticket_id}/comment"
 
     payload = json.dumps({"body": testcase_comment})
@@ -190,11 +199,11 @@ def send_results_to_jira(result, ticket_id):
     }
 
     # Below post call is used to add the comment on JIRA tickets
-    # URL : https://testautomatejira..atlassian.net/rest/api/2/issue/{ticket_id}/comment"
+    # URL : https://testautomatejira.atlassian.net/rest/api/2/issue/{ticket_id}/comment"
     requests.request("POST", comment_url, headers=headers, data=payload)
 
     # Below post call is to make transition for the JIRA tickets
-    # URL : https://testautomatejira..atlassian.net/rest/api/2/issue/{ticket_id}/transitions"
+    # URL : https://testautomatejira.atlassian.net/rest/api/2/issue/{ticket_id}/transitions"
     transition_url = f"https://{JIRA_DOMAIN}{jira_api_endpoint}/{ticket_id}/transitions"
     apply_transition_to_jira_tickets(transition_url, headers=headers, status=result.outcome)
 
@@ -235,12 +244,59 @@ def _capture_screenshot(report):
         try:
             attach(data=driver.get_screenshot_as_png())
             if JIRA_CONDITION:
-                ticket_id = f"{PREFIX_TICKET_VALUE}" + \
-                            (report.nodeid.replace("_", "-")).split(f"{PREFIX_TICKET_VALUE}")[1][:-1]
-                report_time = datetime.now()
-                timestamp = datetime.strftime(report_time, '%Y_%m_%d_%H_%M_%S')
-                img = driver.save_screenshot(f"/jira_failed_images/{ticket_id}_{timestamp}.png")
+                doc_path, ticket_id = save_failed_details_on_dir(report)
+                send_failed_doc_to_jira(ticket_id, doc_path)
         except Exception as e:
             logging.error(f'{error_msg}  Exception: f{str(e)}')
     else:
         logging.error(f'{error_msg}  Selenium driver not valid.')
+
+
+def save_failed_details_on_dir(report):
+    ticket_id = f"{PREFIX_TICKET_VALUE}" + \
+                (report.nodeid.replace("_", "-")).split(f"{PREFIX_TICKET_VALUE}")[1][:-1]
+    report_time = datetime.now()
+    timestamp = datetime.strftime(report_time, '%Y_%m_%d_%H_%M_%S')
+    img_path = "jira_failed_images"
+    if img_path not in os.listdir():
+        os.makedirs(img_path)
+    img_path += f"/{ticket_id}_img_{timestamp}.png"
+    driver.save_screenshot(img_path)
+    doc_path = create_document_for_failed_case(img_path, ticket_id)
+    return doc_path, ticket_id
+
+
+def create_document_for_failed_case(path, ticket_id):
+    document = Document()
+    p = document.add_paragraph()
+    paragraph_obj = p.add_run()
+    paragraph_obj.add_text(f"TICKET ID - {ticket_id}")
+    p = document.add_paragraph()
+    paragraph_obj = p.add_run()
+    paragraph_obj.add_text(f"This ticket is failed at the Below point of execution")
+    p = document.add_paragraph()
+    paragraph_obj = p.add_run()
+    paragraph_obj.add_text(f"Screenshot :")
+    paragraph_obj.add_picture(path, width=Inches(6.0), height=Inches(3.3))
+    doc_path = path.replace("jira_failed_images", "jira_failed_docs")
+    doc_path = doc_path.replace("_img_", "_doc_")
+    doc_path = doc_path.replace(".png", ".docx")
+    if "jira_failed_docs" not in os.listdir():
+        os.makedirs("jira_failed_docs")
+    document.save(doc_path)
+    return doc_path
+
+
+def send_failed_doc_to_jira(ticket_id, doc_path):
+    doc_url = f"https://{JIRA_DOMAIN}{jira_api_endpoint}/{ticket_id}/attachments"
+    file_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    files = [('file', (f'{ticket_id}_Result_docs.docx', open(os.getcwd()+f'/{doc_path}', 'rb'), file_type))]
+    headers = {
+        'X-Atlassian-Token': 'no-check',
+        'Authorization': f'Basic {AUTH_TOKEN}'
+    }
+
+    # Below post call is used to add the document on JIRA tickets
+    # URL : https://testautomatejira.atlassian.net/rest/api/2/issue/{ticket_id}/attachments"
+    req = requests.request("POST", doc_url, headers=headers, files=files)
+    print(req)
