@@ -1,11 +1,17 @@
 import copy
 import logging
 import os
+from datetime import datetime
 from os.path import join, dirname
-import requests
 import json
 import pytest
+import requests
 from dotenv import load_dotenv
+from selenium.webdriver import Chrome, Firefox, ChromeOptions
+from selenium.webdriver.firefox.options import Options as firefox_options
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from pytest_html_reporter import attach
 
 logger = None
 pytest_id = []
@@ -16,15 +22,54 @@ PREFIX_TICKET_VALUE = None
 JIRA_DOMAIN = None
 PASS_STATUS_TRANSITION = None
 FAIL_STATUS_TRANSITION = None
+JIRA_CONDITION = None
 
 
-def set_up_logging(config):
+def pytest_cmdline_main(config):
+    """
+        This method is to override the pytest configuration
+        By overriding path variable, we can set the report generation in customized folder.
+        The report file name based on timestamp value to distinguish the latest report file
+        For eg:
+            report file path = ./reports/<year>/<month>/<date>/
+            report file name = test_report_<timestamp>.html
+    """
+    report_time = datetime.now()
+    year = datetime.strftime(report_time, '%Y')
+    month = datetime.strftime(report_time, '%m')
+    date = datetime.strftime(report_time, '%d')
+    timestamp = datetime.strftime(report_time, '%Y_%m_%d_%H_%M_%S')
+
+    # If "REPORT_NAME" is mentioned on execution, report file will be generated based on proper given name
+    report_name = os.environ.get('REPORT_NAME') if "REPORT_NAME" in os.environ else "Test_report"
+    if report_name.capitalize() != "Test_report":
+        report_name = check_and_modify_report_name(report_name)
+    main_file_path_report = f"./reports/year_{year}/month_{month}/date_{date}/{report_name.capitalize()}_{timestamp}.html"
+    config.option.path = main_file_path_report
+
+
+def check_and_modify_report_name(report_name):
+    replace_name = report_name
+    for n in ["/", "~", ")", "(", "!", "@", "#", "$", "^", "*", "=", ";", ":", "?", "]", "[", "{", "}", "|"]:
+        replace_name = replace_name.replace(n, "_")
+    return replace_name
+
+
+def pytest_configure(config):
+    """
+        Pytest configure method is used to configure
+        all the pre-conditions of pytest run.
+    """
     global logger
 
     try:
         level = config.getoption('log-level'),
     except ValueError as e:
-        level = logging.DEBUG
+        log_level = os.environ.get('LOG_LEVEL', 'INFO')
+        if log_level.upper() == 'DEBUG':
+            level = logging.DEBUG
+        else:
+            level = logging.INFO
 
     logging.basicConfig(level=level,
                         format='%(asctime)s %(levelname)s %(message)s',
@@ -32,8 +77,34 @@ def set_up_logging(config):
     logger = logging.getLogger(__name__)
 
 
-def pytest_configure(config):
-    set_up_logging(config)
+@pytest.fixture(scope="class")
+def driver():
+    global driver
+    global url
+
+    browser = os.environ.get('BROWSER') if "BROWSER" in os.environ else "chrome"
+    mode = os.environ.get('HEADLESS') if "HEADLESS" in os.environ else None
+    if browser.lower() == "firefox":
+        ff_options = firefox_options()
+        if str(mode) == "True":
+            ff_options.headless = True
+        driver = Firefox(executable_path=GeckoDriverManager().install(), options=ff_options)
+    else:
+        chrome_options = ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        if str(mode) == "True":
+            chrome_options.add_argument('--headless')
+        driver = Chrome(ChromeDriverManager().install(), options=chrome_options)
+
+    if "url" in os.environ:
+        url = os.environ.get('url')
+        driver.get(url)
+
+    driver.maximize_window()
+    driver.implicitly_wait(10)
+    yield driver
+    driver.quit()
 
 
 def pytest_collection_modifyitems(session, config, items):
@@ -52,7 +123,7 @@ def pytest_collection_modifyitems(session, config, items):
 
 
 def get_env_values():
-    global AUTH_TOKEN, PREFIX_TICKET_VALUE, JIRA_DOMAIN, PASS_STATUS_TRANSITION, FAIL_STATUS_TRANSITION
+    global AUTH_TOKEN, PREFIX_TICKET_VALUE, JIRA_DOMAIN, PASS_STATUS_TRANSITION, FAIL_STATUS_TRANSITION, JIRA_CONDITION
 
     dotenv_path = join(dirname(__file__), '.env')
     load_dotenv(dotenv_path)
@@ -61,6 +132,7 @@ def get_env_values():
     JIRA_DOMAIN = os.environ.get("JIRA_DOMAIN")
     PASS_STATUS_TRANSITION = os.environ.get("PASS_STATUS_TRANSITION")
     FAIL_STATUS_TRANSITION = os.environ.get("FAIL_STATUS_TRANSITION")
+    JIRA_CONDITION = os.environ.get("JIRA_CONDITION", None)
 
 
 def setup_module(module):
@@ -87,7 +159,7 @@ def pytest_runtest_makereport(item):
     result = outcome.get_result()
 
     log_file = "test_results.log"
-    if result.when == "call":
+    if result.when == "call" and JIRA_CONDITION:
         try:
             with open(log_file, "a") as f:
                 f.write(result.nodeid + "   " + result.outcome + "   " + str(result.duration)+"\n")
@@ -100,6 +172,7 @@ def pytest_runtest_makereport(item):
         except Exception as e:
             print("Error", e)
             pass
+    collect_screenshot(item, result)
 
 
 def send_results_to_jira(result, ticket_id):
@@ -134,3 +207,40 @@ def apply_transition_to_jira_tickets(transition_url, headers, status):
     elif status in ["failed", "skipped"]:
         transition_payload_failed = json.dumps({"transition": {"id": f"{FAIL_STATUS_TRANSITION}"}})
         requests.request(method, transition_url, headers=headers, data=transition_payload_failed)
+
+
+def collect_screenshot(item, report):
+    """
+    :param item: The result for all items
+    :param report: The result object for the test
+    """
+
+    # For tests inside ui, when the test fails, automatically take a
+    # screenshot and display it in the html report
+
+    location = getattr(report, 'location', [])
+
+    if "ui" in location[0] and (report.when == 'call' or report.when == "setup"):
+        if report.outcome in ["skipped", "failed"]:
+            _capture_screenshot(report)
+
+
+def _capture_screenshot(report):
+    """
+        This method is used to attach the screenshot on UI failures to HTML report file
+    """
+
+    error_msg = f'Unable to create screenshot'
+    if driver:
+        try:
+            attach(data=driver.get_screenshot_as_png())
+            if JIRA_CONDITION:
+                ticket_id = f"{PREFIX_TICKET_VALUE}" + \
+                            (report.nodeid.replace("_", "-")).split(f"{PREFIX_TICKET_VALUE}")[1][:-1]
+                report_time = datetime.now()
+                timestamp = datetime.strftime(report_time, '%Y_%m_%d_%H_%M_%S')
+                img = driver.save_screenshot(f"/jira_failed_images/{ticket_id}_{timestamp}.png")
+        except Exception as e:
+            logging.error(f'{error_msg}  Exception: f{str(e)}')
+    else:
+        logging.error(f'{error_msg}  Selenium driver not valid.')
