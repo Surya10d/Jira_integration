@@ -256,12 +256,13 @@ def save_failed_details_on_dir(report):
                 (report.nodeid.replace("_", "-")).split(f"{PREFIX_TICKET_VALUE}")[1][:-1]
     report_time = datetime.now()
     timestamp = datetime.strftime(report_time, '%Y_%m_%d_%H_%M_%S')
+    file_exact_path = os.path.abspath(__file__).split("/conftest.py")[0]
     img_path = "jira_failed_images"
-    if img_path not in os.listdir():
-        os.makedirs(img_path)
+    if img_path not in os.listdir(path=file_exact_path):
+        os.makedirs(file_exact_path+"/"+img_path)
     img_path += f"/{ticket_id}_img_{timestamp}.png"
-    driver.save_screenshot(img_path)
-    doc_path = create_document_for_failed_case(img_path, ticket_id)
+    driver.save_screenshot(file_exact_path+"/"+img_path)
+    doc_path = create_document_for_failed_case(file_exact_path+"/"+img_path, ticket_id)
     return doc_path, ticket_id
 
 
@@ -277,11 +278,13 @@ def create_document_for_failed_case(path, ticket_id):
     doc.add_run_to_para_obj()
     doc.add_text_to_run_obj("Screenshot :")
     doc.add_image_to_run_obj(path)
-    doc_path = path.replace("jira_failed_images", "jira_failed_docs")
+    doc_path = path
     doc_path = doc_path.replace("_img_", "_doc_")
     doc_path = doc_path.replace(".png", ".docx")
-    if "jira_failed_docs" not in os.listdir():
-        os.makedirs("jira_failed_docs")
+    file_exact_path = os.path.abspath(__file__).split("/conftest.py")[0]
+    path = "jira_failed_docs"
+    if path not in os.listdir(path=file_exact_path):
+        os.makedirs(file_exact_path+"/"+path)
     doc.save_document(doc_path)
     return doc_path
 
@@ -289,7 +292,8 @@ def create_document_for_failed_case(path, ticket_id):
 def send_failed_doc_to_jira(ticket_id, doc_path):
     doc_url = f"https://{JIRA_DOMAIN}{jira_api_endpoint}/{ticket_id}/attachments"
     file_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    files = [('file', (f'{ticket_id}_Result_docs.docx', open(os.getcwd()+f'/{doc_path}', 'rb'), file_type))]
+    timestamp = datetime.strftime(datetime.now(), '%Y_%m_%d_%H_%M')
+    files = [('file', (f'{ticket_id}_failed_doc_result_at_{timestamp}.docx', open(f'{doc_path}', 'rb'), file_type))]
     headers = {
         'X-Atlassian-Token': 'no-check',
         'Authorization': f'Basic {AUTH_TOKEN}'
