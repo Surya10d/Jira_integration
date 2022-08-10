@@ -278,7 +278,7 @@ def create_document_for_failed_case(path, ticket_id):
     doc.add_run_to_para_obj()
     doc.add_text_to_run_obj("Screenshot :")
     doc.add_image_to_run_obj(path)
-    doc_path = path
+    doc_path = path.replace("jira_failed_images", "jira_failed_docs")
     doc_path = doc_path.replace("_img_", "_doc_")
     doc_path = doc_path.replace(".png", ".docx")
     file_exact_path = os.path.abspath(__file__).split("/conftest.py")[0]

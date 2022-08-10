@@ -43,33 +43,33 @@ class TestCaseJiraAddDoc(JiraClientInit):
         doc_path, doc_name = self.save_document_in_local(ticket_id)
         self.send_doc_to_jira(ticket_id, doc_path, doc_name)
 
-    @pytest.mark.parametrize("ticket_id,search_value", [("TP-2", "sdfasdfdasd"), ("TP-2", "cau")])
-    def test_search_with_valid_value_TP_2(self, ticket_id, search_value, initialise):
-        input_value = search_value
-        self.driver.find_element(*self.search_btn).send_keys(input_value)
-        case_name = inspect.getframeinfo(inspect.currentframe()).function
-        self.insert_comment("Executing " + case_name + " test case")
-        self.insert_comment(f"1. Inserted '{search_value}' value in search box")
-        self.save_image_to_doc(ticket_id)
-        self.insert_comment("2. Product Search filter is applied and result are shown")
-        self.save_image_to_doc(ticket_id)
-        product_name_text = None
-        try:
-            product_name_text = self.driver.find_element(*self.no_product_label).text
-            if product_name_text == "Sorry, no products matched your search!":
-                assert False, "No products found for search value"
-        except Exception as exp:
-            if exp.__class__ == AssertionError:
-                raise AssertionError("Assertion is not matched")
-            else:
-                pass
-        if not product_name_text:
-            assert True, "No products found for search value"
-        self.insert_comment(f"Result: Assertion condition is passed, {search_value} is present as product filter")
-        self.save_image_to_doc(ticket_id)
-        self.insert_comment("Test case Execution " + case_name + " is completed")
-        doc_path, doc_name = self.save_document_in_local(ticket_id)
-        self.send_doc_to_jira(ticket_id, doc_path, doc_name)
+    # @pytest.mark.parametrize("ticket_id,search_value", [("TP-2", "cau")])
+    # def test_search_with_valid_value_TP_2(self, ticket_id, search_value, initialise):
+    #     input_value = search_value
+    #     self.driver.find_element(*self.search_btn).send_keys(input_value)
+    #     case_name = inspect.getframeinfo(inspect.currentframe()).function
+    #     self.insert_comment("Executing " + case_name + " test case")
+    #     self.insert_comment(f"1. Inserted '{search_value}' value in search box")
+    #     self.save_image_to_doc(ticket_id)
+    #     self.insert_comment("2. Product Search filter is applied and result are shown")
+    #     self.save_image_to_doc(ticket_id)
+    #     product_name_text = None
+    #     try:
+    #         product_name_text = self.driver.find_element(*self.no_product_label).text
+    #         if product_name_text == "Sorry, no products matched your search!":
+    #             assert False, "No products found for search value"
+    #     except Exception as exp:
+    #         if exp.__class__ == AssertionError:
+    #             raise AssertionError("Assertion is not matched")
+    #         else:
+    #             pass
+    #     if not product_name_text:
+    #         assert True, "No products found for search value"
+    #     self.insert_comment(f"Result: Assertion condition is passed, {search_value} is present as product filter")
+    #     self.save_image_to_doc(ticket_id)
+    #     self.insert_comment("Test case Execution " + case_name + " is completed")
+    #     doc_path, doc_name = self.save_document_in_local(ticket_id)
+    #     self.send_doc_to_jira(ticket_id, doc_path, doc_name)
 
     @pytest.mark.parametrize("ticket_id", ["TP-3"])
     def test_search_with_valid_value_TP_3(self, ticket_id, initialise):
