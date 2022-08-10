@@ -12,9 +12,7 @@ from selenium.webdriver.firefox.options import Options as firefox_options
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from pytest_html_reporter import attach
-from docx import Document
-from docx.shared import Inches
-
+from .document_creation import DocumentCreation
 
 
 logger = None
@@ -84,7 +82,7 @@ def pytest_configure(config):
     logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="function")
 def driver():
     global driver
     global url
@@ -208,6 +206,7 @@ def send_results_to_jira(result, ticket_id):
     apply_transition_to_jira_tickets(transition_url, headers=headers, status=result.outcome)
 
 
+
 def apply_transition_to_jira_tickets(transition_url, headers, status):
     method = "POST"
     if status == "passed":
@@ -267,23 +266,23 @@ def save_failed_details_on_dir(report):
 
 
 def create_document_for_failed_case(path, ticket_id):
-    document = Document()
-    p = document.add_paragraph()
-    paragraph_obj = p.add_run()
-    paragraph_obj.add_text(f"TICKET ID - {ticket_id}")
-    p = document.add_paragraph()
-    paragraph_obj = p.add_run()
-    paragraph_obj.add_text(f"This ticket is failed at the Below point of execution")
-    p = document.add_paragraph()
-    paragraph_obj = p.add_run()
-    paragraph_obj.add_text(f"Screenshot :")
-    paragraph_obj.add_picture(path, width=Inches(6.0), height=Inches(3.3))
+    doc = DocumentCreation()
+    doc.create_para_object()
+    doc.add_run_to_para_obj()
+    doc.add_text_to_run_obj(f"TICKET ID - {ticket_id}")
+    doc.create_para_object()
+    doc.add_run_to_para_obj()
+    doc.add_text_to_run_obj("This ticket is failed at the Below point of execution")
+    doc.create_para_object()
+    doc.add_run_to_para_obj()
+    doc.add_text_to_run_obj("Screenshot :")
+    doc.add_image_to_run_obj(path)
     doc_path = path.replace("jira_failed_images", "jira_failed_docs")
     doc_path = doc_path.replace("_img_", "_doc_")
     doc_path = doc_path.replace(".png", ".docx")
     if "jira_failed_docs" not in os.listdir():
         os.makedirs("jira_failed_docs")
-    document.save(doc_path)
+    doc.save_document(doc_path)
     return doc_path
 
 
@@ -298,5 +297,4 @@ def send_failed_doc_to_jira(ticket_id, doc_path):
 
     # Below post call is used to add the document on JIRA tickets
     # URL : https://testautomatejira.atlassian.net/rest/api/2/issue/{ticket_id}/attachments"
-    req = requests.request("POST", doc_url, headers=headers, files=files)
-    print(req)
+    requests.request("POST", doc_url, headers=headers, files=files)
