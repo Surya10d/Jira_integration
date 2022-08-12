@@ -1,6 +1,6 @@
 name: GET PR link 
 on:
-  push:
+  pull_request:
     branches:
       Pr_main
 jobs:
