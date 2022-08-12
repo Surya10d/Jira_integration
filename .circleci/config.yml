@@ -1,0 +1,243 @@
+version: 2.1
+orbs:
+  python: circleci/python@2.0.3
+  browser-tools: circleci/browser-tools@1.4.0
+parameters:
+  workflow_run:
+    type: string
+    default: 'automatic'
+  pytest_ui_sanity_path:
+    type: string
+    default: './test_cases/ui/*/sanity_cases'
+  pytest_api_sanity_path:
+    type: string
+    default: './test_cases/api/*/sanity_cases'
+  pytest_ui_functional_path:
+    type: string
+    default: './test_cases/ui/*/functional_cases'
+  pytest_ui_integration_path:
+    type: string
+    default: './test_cases/ui/*/integration_cases'
+  pytest_api_functional_path:
+    type: string
+    default: './test_cases/api/*/functional_cases'
+  pytest_api_integration_path:
+    type: string
+    default: './test_cases/api/*/integration_cases'
+jobs:
+  pytest_run_sample_test:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run sample API
+          command: |
+            pytest << pipeline.parameters.pytest_api_sanity_path >>
+      - run:
+          name: Run sample UI
+          command: |
+            HEADLESS="True" BROWSER="chrome" pytest << pipeline.parameters.pytest_ui_sanity_path >>
+  pytest_run_api_functional:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Functional API tests
+          command: |
+            pytest << pipeline.parameters.pytest_api_functional_path >>
+  pytest_run_api_integration:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Integration API tests
+          command: |
+            pytest << pipeline.parameters.pytest_api_integration_path >>
+  pytest_run_api_sanity:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Sanity API tests
+          command: |
+            pytest << pipeline.parameters.pytest_api_sanity_path >>
+  pytest_run_ui_sanity:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Sanity UI tests
+          command: |
+            pytest << pipeline.parameters.pytest_ui_sanity_path >>
+  pytest_run_ui_functional:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Functional UI tests
+          command: |
+            HEADLESS="True" pytest << pipeline.parameters.pytest_ui_functional_path >>
+  pytest_run_ui_integration:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - browser-tools/install-browser-tools:
+          chrome-version: 102.0.5005.61
+          firefox-version: 101.0.1
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Install Pytest Dependencies
+          command: pip install -r requirements.txt
+      - run:
+          name: Run Integration UI tests
+          command: |
+            HEADLESS="True" pytest << pipeline.parameters.pytest_ui_integration_path >>
+  workflow_test_PR:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - run:
+          name: Get Github details
+          command: |
+            echo "$CI_PULL_REQUEST"
+            echo "$CIRCLE_PULL_REQUEST"
+workflows:
+  check_workflow_pr_detail:
+    jobs:
+      - workflow_test_PR
+
+
+#  pytest_run_api_sanity_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_sanity_path >>]
+#    jobs:
+#      - pytest_run_api_sanity
+#
+#  pytest_run_ui_sanity_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_sanity_path >>]
+#    jobs:
+#      - pytest_run_ui_sanity
+#
+#  pytest_run_api_functional_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_functional_path >>]
+#    jobs:
+#      - pytest_run_api_functional
+#
+#  pytest_run_api_integration_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_integration_path >>]
+#    jobs:
+#      - pytest_run_api_integration
+#
+#  pytest_run_ui_functional_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_functional_path >>]
+#    jobs:
+#      - pytest_run_ui_functional
+#
+#  pytest_run_ui_integration_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_integration_path >>]
+#    jobs:
+#      - pytest_run_ui_integration
