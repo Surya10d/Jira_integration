@@ -8,6 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pull Request URL
-        uses: kceb/pull-request-url-action@v2
-        id: pr-url
-      - run: echo "${{ steps.pr-url.outputs.url }}"
+      - run: echo "${{ github.event.number }}"
