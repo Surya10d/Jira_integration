@@ -41,12 +41,10 @@ jobs:
       - run:
           name: Run sample API
           command: |
-            cd tests
             pytest << pipeline.parameters.pytest_api_sanity_path >>
       - run:
           name: Run sample UI
           command: |
-            cd tests
             HEADLESS="True" BROWSER="chrome" pytest << pipeline.parameters.pytest_ui_sanity_path >>
   pytest_run_api_functional:
     docker:
@@ -64,7 +62,6 @@ jobs:
       - run:
           name: Run Functional API tests
           command: |
-            cd tests
             pytest << pipeline.parameters.pytest_api_functional_path >>
   pytest_run_api_integration:
     docker:
@@ -82,7 +79,6 @@ jobs:
       - run:
           name: Run Integration API tests
           command: |
-            cd tests
             pytest << pipeline.parameters.pytest_api_integration_path >>
   pytest_run_api_sanity:
     docker:
@@ -100,7 +96,6 @@ jobs:
       - run:
           name: Run Sanity API tests
           command: |
-            cd tests
             pytest << pipeline.parameters.pytest_api_sanity_path >>
   pytest_run_ui_sanity:
     docker:
@@ -118,7 +113,6 @@ jobs:
       - run:
           name: Run Sanity UI tests
           command: |
-            cd tests
             pytest << pipeline.parameters.pytest_ui_sanity_path >>
   pytest_run_ui_functional:
     docker:
@@ -136,7 +130,6 @@ jobs:
       - run:
           name: Run Functional UI tests
           command: |
-            cd tests
             HEADLESS="True" pytest << pipeline.parameters.pytest_ui_functional_path >>
   pytest_run_ui_integration:
     docker:
@@ -154,7 +147,6 @@ jobs:
       - run:
           name: Run Integration UI tests
           command: |
-            cd tests
             HEADLESS="True" pytest << pipeline.parameters.pytest_ui_integration_path >>
 workflows:
   pytest_run_api_sanity_cases:
