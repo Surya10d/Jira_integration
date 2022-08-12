@@ -7,7 +7,7 @@ jobs:
   Run_Selected_Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: kceb/pull-request-url-action@v1
+      - name: Pull Request URL
+        uses: kceb/pull-request-url-action@v2
         id: pr-url
-
       - run: echo "${{ steps.pr-url.outputs.url }}"
