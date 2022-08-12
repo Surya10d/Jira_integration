@@ -156,8 +156,8 @@ jobs:
       - run:
           name: Get Github details
           command: |
-            echo "<< pipeline.git.event.repository.name >>"
-            echo "<< pipeline.git.event.number >>"
+            echo "$CI_PULL_REQUEST"
+            echo "$CIRCLE_PULL_REQUEST"
 workflows:
   check_workflow_pr_detail:
     jobs:
