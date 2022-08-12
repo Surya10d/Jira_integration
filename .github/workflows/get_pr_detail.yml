@@ -12,4 +12,7 @@ jobs:
           fetch-depth: 0
 
       - name: Pull Request URL
-        run: echo "${{ github.event.number }}"
+        run: |
+          echo "${{ github.event.number }}"
+          echo "${{ github.event.repository.name }}"
+          echo "${{ github.event.link }}"
