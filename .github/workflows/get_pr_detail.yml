@@ -1,13 +1,19 @@
-name: GET PR link 
+name: Run workflow for PR
 on:
   pull_request:
     branches:
       - Pr_main
+    types:
+      - closed
 jobs:
   Run_Selected_Tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: kceb/pull-request-url-action@v1
-        id: pr-url
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-      - run: echo "${{ steps.pr-url.outputs.url }}"
+      - name: Pull Request URL
+        run: |
+          export GIT_PR_NUMBER="${{ github.event.number }}"
+          export GIT_REPOSITORY_NAME="${{ github.event.repository.name }}"
