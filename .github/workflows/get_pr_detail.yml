@@ -15,6 +15,5 @@ jobs:
 
       - name: Pull Request URL
         run: |
-          echo "${{ github.event.number }}"
-          echo "${{ github.event.repository.name }}"
-          echo "${{ github.event.link }}"
+          export GIT_PR_NUMBER="${{ github.event.number }}"
+          export GIT_REPOSITORY_NAME="${{ github.event.repository.name }}"
