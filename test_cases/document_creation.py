@@ -2,6 +2,7 @@ from docx import Document
 from docx.shared import Inches
 
 
+
 class DocumentCreation:
     def __init__(self):
         self.document_obj = Document()
