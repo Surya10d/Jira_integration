@@ -148,81 +148,95 @@ jobs:
           name: Run Integration UI tests
           command: |
             HEADLESS="True" pytest << pipeline.parameters.pytest_ui_integration_path >>
+  workflow_test_PR:
+    docker:
+      - image: cimg/python:3.10.2
+    steps:
+      - checkout
+      - run:
+          name: Get Github details
+          command: |
+            echo "<< pipeline.github.event.repository.name >>"
+            echo "<< pipeline.github.event.number >>"
 workflows:
-  pytest_run_api_sanity_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_api_sanity_path >>]
+  check_workflow_pr_detail:
     jobs:
-      - pytest_run_api_sanity
+      - workflow_test_PR
 
-  pytest_run_ui_sanity_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_ui_sanity_path >>]
-    jobs:
-      - pytest_run_ui_sanity
-
-  pytest_run_api_functional_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_api_functional_path >>]
-    jobs:
-      - pytest_run_api_functional
-
-  pytest_run_api_integration_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_api_integration_path >>]
-    jobs:
-      - pytest_run_api_integration
-
-  pytest_run_ui_functional_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_ui_functional_path >>]
-    jobs:
-      - pytest_run_ui_functional
-
-  pytest_run_ui_integration_cases:
-    when:
-      and:
-        - or:
-          - equal: [ main, << pipeline.git.branch >> ]
-          - or:
-            - equal: [ manual, << pipeline.parameters.workflow_run >>]
-        - not:
-            and:
-              - equal: ['none', << pipeline.parameters.pytest_ui_integration_path >>]
-    jobs:
-      - pytest_run_ui_integration
+#  pytest_run_api_sanity_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_sanity_path >>]
+#    jobs:
+#      - pytest_run_api_sanity
+#
+#  pytest_run_ui_sanity_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_sanity_path >>]
+#    jobs:
+#      - pytest_run_ui_sanity
+#
+#  pytest_run_api_functional_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_functional_path >>]
+#    jobs:
+#      - pytest_run_api_functional
+#
+#  pytest_run_api_integration_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_api_integration_path >>]
+#    jobs:
+#      - pytest_run_api_integration
+#
+#  pytest_run_ui_functional_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_functional_path >>]
+#    jobs:
+#      - pytest_run_ui_functional
+#
+#  pytest_run_ui_integration_cases:
+#    when:
+#      and:
+#        - or:
+#          - equal: [ main, << pipeline.git.branch >> ]
+#          - or:
+#            - equal: [ manual, << pipeline.parameters.workflow_run >>]
+#        - not:
+#            and:
+#              - equal: ['none', << pipeline.parameters.pytest_ui_integration_path >>]
+#    jobs:
+#      - pytest_run_ui_integration
