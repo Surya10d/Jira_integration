@@ -2,7 +2,7 @@ name: GET PR link
 on:
   pull_request:
     branches:
-      Pr_main
+      - Pr_main
 jobs:
   Run_Selected_Tests:
     runs-on: ubuntu-latest
