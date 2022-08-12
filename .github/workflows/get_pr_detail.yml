@@ -1,7 +1,8 @@
 name: GET PR link 
 on:
   push:
-    branches
+    branches:
+      Pr_main
 jobs:
   Run_Selected_Tests:
     runs-on: ubuntu-latest
