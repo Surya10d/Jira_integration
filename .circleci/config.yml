@@ -156,8 +156,8 @@ jobs:
       - run:
           name: Get Github details
           command: |
-            echo "<< pipeline.github.event.repository.name >>"
-            echo "<< pipeline.github.event.number >>"
+            echo "<< pipeline.git.event.repository.name >>"
+            echo "<< pipeline.git.event.number >>"
 workflows:
   check_workflow_pr_detail:
     jobs:
